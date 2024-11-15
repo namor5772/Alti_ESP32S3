@@ -21,15 +21,32 @@
 
   https://www.arduino.cc/en/Tutorial/BuiltInExamples/Blink
 */
+// global variables
+uint32_t chipId = 0;
+int i = 0;
 
 // the setup function runs once when you press reset or power the board
 void setup() {
+  Serial.begin(115200);
+
+  for (i = 0; i < 17; i = i + 8) {
+    chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
+  }
+  Serial.printf("ESP32 Chip model = %s Rev %d\n", ESP.getChipModel(), ESP.getChipRevision());
+  Serial.printf("This chip has %d cores\n", ESP.getChipCores());
+  Serial.print("Chip ID: ");
+  Serial.print(chipId);
+  Serial.println("\n");
+
   // initialize digital pin LED_BUILTIN as an output.
   pinMode(LED_BUILTIN, OUTPUT);
+
+  i = 0;
 }
 
 // the loop function runs over and over again forever
 void loop() {
+
   digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
   delay(1000);                      // wait for a second
   digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
@@ -46,4 +63,8 @@ void loop() {
   delay(150);                      // wait for a second
   digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
   delay(150);                      // wait for a second
+
+    Serial.println(i);
+    i++;
+
 }
