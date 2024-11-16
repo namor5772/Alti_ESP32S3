@@ -1,35 +1,46 @@
-/*
-  Blink
+#include "MS5637.h"
+#include "PCD8544.h"
+#include "Font.h"
 
-  Turns an LED on for one second, then off for one second, repeatedly.
+// Nokia 5772 - PCD8544 driver chip
+// and pinout to SEED ESP32s3 MICRO
+// 1 - VCC (3v3)
+// 2 - GND
+// 3 - SCE (CE)       - GPIO1 D0
+// 4 - RST (RST)      - GPIO2 D1
+// 5 - D/C (DC)       - GPIO3 D2
+// 6 - DN<MOSI> (DIN) - GPIO4 D3 
+// 7 - SCLK (CLK)     - GPIO9 D10
+// 8 - LED 
+#define RST 2
+#define CE 1
+#define DC 3
+#define DIN 4
+#define CLK 9
 
-  Most Arduinos have an on-board LED you can control. On the UNO, MEGA and ZERO
-  it is attached to digital pin 13, on MKR1000 on pin 6. LED_BUILTIN is set to
-  the correct LED pin independent of which board is used.
-  If you want to know what pin the on-board LED is connected to on your Arduino
-  model, check the Technical Specs of your board at:
-  https://www.arduino.cc/en/Main/Products
+// An instance called lcd of the PCD8544 class is created
+// The module uses an enhanced bit-bashed 3-Wire SPI communications protcol
+// The specified pins are: CLK, MOS, RES, DC, CS.
+PCD8544 lcd{RST, CE, DC, DIN, CLK};
 
-  modified 8 May 2014
-  by Scott Fitzgerald
-  modified 2 Sep 2016
-  by Arturo Guadalupi
-  modified 8 Sep 2016
-  by Colby Newman
+// An instance of the MS5637 class called BARO is created
+// The address and micro pins are defined in the MS5637.h file
+// The module is I2C and has just 4 pins:
+// 1 GND - connect to ground pin on micro (Seeed ESP32S3 here)
+// 2 SDA - connect to SDA pin on micro (also called GPIO5 & D4)
+// 3 SCL - connect to SCL pin on micro (also called GPIO6 & D5)
+// 4 VCC - connect to 3V3 pin on micro
 
-  This example code is in the public domain.
+MS5637 BARO;
 
-  https://www.arduino.cc/en/Tutorial/BuiltInExamples/Blink
-*/
 // global variables
 uint32_t chipId = 0;
-int i = 0;
+float temp, pressure, altBase, altRel;
 
-// the setup function runs once when you press reset or power the board
 void setup() {
   Serial.begin(115200);
 
-  for (i = 0; i < 17; i = i + 8) {
+  for (int i = 0; i < 17; i = i + 8) {
     chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
   }
   Serial.printf("ESP32 Chip model = %s Rev %d\n", ESP.getChipModel(), ESP.getChipRevision());
@@ -38,33 +49,49 @@ void setup() {
   Serial.print(chipId);
   Serial.println("\n");
 
-  // initialize digital pin LED_BUILTIN as an output.
-  pinMode(LED_BUILTIN, OUTPUT);
+  // setup lcd screen and display splash screen for 2 seconds
+  lcd.setContrast(60);
+  lcd.setDisplayMode(NORMAL);
+  lcd.print("Alti ESP32v2.0 Nov24");
+  lcd.print("----------");
+  lcd.setCursor(0, 3);
+  lcd.print("Roman M   Groblicki ");
+  lcd.print("----------");
+  delay(4000);
+  lcd.clear();
+  lcd.setDisplayMode(INVERSE);
 
-  i = 0;
+  // setup MS5637 sensor (An instance of the MS5637 object BARO has been constructed above)
+  BARO.begin();
+  BARO.dumpDebugOutput();
+  BARO.getTempAndPressure(&temp, &pressure);
+  altBase = BARO.pressure2altitude(pressure);
+  altBase = 0.0;
+  Serial.println(altBase);  
 }
 
-// the loop function runs over and over again forever
+
 void loop() {
+  if (!BARO.isOK()) {
+    // Try to reinitialise the sensor if we can and measure temperature and pressure
+    BARO.begin();
+    BARO.getTempAndPressure(&temp, &pressure);
+  }
+  else { // just normal measurements on each loop
+    BARO.getTempAndPressure(&temp, &pressure);
+  }
 
-  digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-  delay(1000);                      // wait for a second
-  digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
-  delay(150);                      // wait for a second
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED off by making the voltage LOW
-  delay(150);                      // wait for a second
-  digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
-  delay(150);                      // wait for a second
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED off by making the voltage LOW
-  delay(150);                      // wait for a second
-  digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
-  delay(150);                      // wait for a second
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED off by making the voltage LOW
-  delay(150);                      // wait for a second
-  digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
-  delay(150);                      // wait for a second
+  // display current temperature measured by the MS5637 (and used to
+  // improve calculation of air pressure)
+  lcd.Temperature(temp, 0, 2);
 
-    Serial.println(i);
-    i++;
+  // Calculate and display the altitude relative to where the altimeter was turned on
+  altRel = BARO.pressure2altitude(pressure) - altBase;
+  lcd.Altitude_smallfont(altRel, 2, 0);
 
+  Serial.print(temp);
+  Serial.print(" ");
+  Serial.println(altRel);
+
+  delay(1000);
 }
