@@ -36,6 +36,7 @@ MS5637 BARO;
 // global variables
 uint32_t chipId = 0;
 float temp, pressure, altBase, altRel;
+char str[11];
 
 void setup() {
   Serial.begin(115200);
@@ -50,8 +51,8 @@ void setup() {
   Serial.println("\n");
 
   // setup lcd screen and display splash screen for 2 seconds
-  lcd.setContrast(60);
   lcd.setDisplayMode(NORMAL);
+  lcd.setContrast(60);
   lcd.print("Alti ESP32v2.0 Nov24");
   lcd.print("----------");
   lcd.setCursor(0, 3);
@@ -59,15 +60,15 @@ void setup() {
   lcd.print("----------");
   delay(4000);
   lcd.clear();
-  lcd.setDisplayMode(INVERSE);
 
   // setup MS5637 sensor (An instance of the MS5637 object BARO has been constructed above)
   BARO.begin();
   BARO.dumpDebugOutput();
   BARO.getTempAndPressure(&temp, &pressure);
-  altBase = BARO.pressure2altitude(pressure);
+//  altBase = BARO.pressure2altitude(pressure);
   altBase = 0.0;
   Serial.println(altBase);  
+
 }
 
 
@@ -83,15 +84,27 @@ void loop() {
 
   // display current temperature measured by the MS5637 (and used to
   // improve calculation of air pressure)
-  lcd.Temperature(temp, 0, 2);
+//  lcd.Temperature(temp, 0, 2);
 
   // Calculate and display the altitude relative to where the altimeter was turned on
-  altRel = BARO.pressure2altitude(pressure) - altBase;
-  lcd.Altitude_smallfont(altRel, 2, 0);
+  altRel = BARO.pressure2altitude(pressure) - altBase; 
+  if (altRel < 0.0) altRel = -1.0*altRel; // take the absolute value 
+  lcd.Altitude_largefont(altRel);
+//  lcd.Altitude_smallfont(altRel, 2, 0);
 
   Serial.print(temp);
   Serial.print(" ");
   Serial.println(altRel);
+
+/*
+  lcd.Altitude_largefont(34); delay(2000);
+  lcd.Altitude_largefont(90); delay(2000);
+  lcd.Altitude_largefont(853); delay(2000);
+  lcd.Altitude_largefont(1234); delay(2000);
+  lcd.Altitude_largefont(23400); delay(2000);
+  lcd.Altitude_largefont(56700); delay(2000);
+  lcd.Altitude_largefont(8900); delay(2000);
+*/
 
   delay(1000);
 }

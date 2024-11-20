@@ -2,6 +2,7 @@
 #include "PCD8544.h"
 #include "Font.h"
 
+
 PCD8544::PCD8544(uint8_t RST, uint8_t CE, uint8_t DC, uint8_t DIN, uint8_t CLK):
   _RST(RST), _CE(CE), _DC(DC), _DIN(DIN), _CLK(CLK) {
 
@@ -23,6 +24,7 @@ PCD8544::PCD8544(uint8_t RST, uint8_t CE, uint8_t DC, uint8_t DIN, uint8_t CLK):
   for (int i=0; i<10; i++) {
     str_old[i] = ' ';  
     str_old0[i] = ' ';
+    str_old1[i] = ' ';
   }        
 }
 
@@ -144,7 +146,7 @@ void PCD8544::Temperature(float temp_, uint8_t page, uint8_t col) {
   }
 }
 
-// generate and display formatted string for altitude,
+// generate and display formatted string for altitude, using 16x24 font.
 // 3 pages (24 bits) high, In feet, 2 dp, can change position.
 // but for speed only redisplay changed characters.
 void PCD8544::Altitude_smallfont(float altitude, uint8_t page, uint8_t col) {
@@ -156,6 +158,42 @@ void PCD8544::Altitude_smallfont(float altitude, uint8_t page, uint8_t col) {
     str_old[i] = str_new[i]; // after loop finish make str_old the current str_new
   }
 }     
+
+// generate and display formatted string for altitude, mainly using 24x48 font.
+void PCD8544::Altitude_largefont(float altitude) {
+  uint16_t point = 0x0008;
+  str_new1[5] = 'p'; // a bit of a fudge to avoid redrawing custom point
+
+  dtostrf(altitude/10.0,4,0,str_new1);
+  if (altitude < 100.0) {
+    point = 0x000C; // make point blank
+    str_new1[5] = 'b';
+  } else if (altitude < 1000.0) {
+    str_new1[1] = '0';    
+  }
+
+  if (str_new1[0] != str_old1[0]) {
+    writeBlock(0, 24*0, 6, 24,  ASCII2offset(str_new1[0], 0x0090), FontNums24x48);
+    str_old1[0] = str_new1[0]; // after display make str_old1 the current str_new1
+  }
+  if (str_new1[1] != str_old1[1]) {
+    writeBlock(0, 24*1, 6, 24,  ASCII2offset(str_new1[1], 0x0090), FontNums24x48);
+    str_old1[1] = str_new1[1];
+  }
+  if (str_new1[5] != str_old1[5]) {
+    writeBlock(3, 24*2, 1, 4,  point, Symbols4x8);
+    str_old1[5] = str_new1[5];
+  }
+  if (str_new1[2] != str_old1[2]) {
+    writeBlock(0, 24*2+4, 6, 24,  ASCII2offset(str_new1[2], 0x0090), FontNums24x48);
+    str_old1[2] = str_new1[2];
+  }
+  if (str_new1[3] != str_old1[3]) {
+    write8x8Char(5, 24*3+4, str_new1[3], Font8x8_);
+    str_old1[3] = str_new1[3];
+  }
+}     
+
 
 // a private utility function that maps numbers 'only' font chars to memmory offsets
 // in font bitmap arrays, needs offsetScale argument to make if useful for different size fonts

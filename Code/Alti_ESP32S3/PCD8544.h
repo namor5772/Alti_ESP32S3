@@ -38,6 +38,7 @@ class PCD8544 : public Print {
     void write8x8Char(uint8_t page, uint8_t column, uint16_t charCode, const uint8_t Arr[][8]);
     void Temperature(float temp_, uint8_t page, uint8_t col);
     void Altitude_smallfont(float altitude, uint8_t page, uint8_t col);
+    void Altitude_largefont(float altitude);
     uint16_t ASCII2offset(char char_, uint16_t offsetScale);
 
     virtual size_t write(uint8_t ch); // Overriding Print's write method
@@ -61,6 +62,7 @@ class PCD8544 : public Print {
     // specific char arrays used when displaying text on LED
     char str_old[11]; char str_new[11];
     char str_old0[11]; char str_new0[11];
+    char str_old1[11]; char str_new1[11];
 };
 
 #endif
