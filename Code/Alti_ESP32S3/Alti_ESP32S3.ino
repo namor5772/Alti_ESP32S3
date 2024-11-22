@@ -2,6 +2,10 @@
 #include "PCD8544.h"
 #include "Font.h"
 
+
+// Define the analog pin connected to the voltage divider
+#define BATTERY_PIN 8 // GPIO8 (A9)
+
 // Nokia 5772 - PCD8544 driver chip
 // and pinout to SEED ESP32s3 MICRO
 // 1 - VCC (3v3)
@@ -36,7 +40,9 @@ MS5637 BARO;
 // global variables
 uint32_t chipId = 0;
 float temp, pressure, altBase, altRel;
-char str[11];
+uint16_t adcRaw;
+float batVol; 
+
 
 void setup() {
   Serial.begin(115200);
@@ -105,6 +111,14 @@ void loop() {
   lcd.Altitude_largefont(56700); delay(2000);
   lcd.Altitude_largefont(8900); delay(2000);
 */
+  // Read and p[rint the raw ADC value 
+  adcRaw = analogRead(BATTERY_PIN);
+  batVol = adcRaw*0.00102; // raw adc value to battery voltage conversion
+    lcd.Battery_smallfont(batVol, 0, 0);
+  Serial.print("Raw ADC: ");
+  Serial.println(adcRaw);
+  Serial.print("Battery Volatge: ");
+  Serial.println(batVol);
 
   delay(1000);
 }

@@ -25,6 +25,7 @@ PCD8544::PCD8544(uint8_t RST, uint8_t CE, uint8_t DC, uint8_t DIN, uint8_t CLK):
     str_old[i] = ' ';  
     str_old0[i] = ' ';
     str_old1[i] = ' ';
+    str_old2[i] = ' ';
   }        
 }
 
@@ -143,6 +144,16 @@ void PCD8544::Temperature(float temp_, uint8_t page, uint8_t col) {
   for (int i=0; i<w; i++) {
     if (str_new0[i] != str_old0[i]) write8x8Char(page, col+i*8, str_new0[i], Font8x8_);
     str_old0[i] = str_new0[i]; // after loop finish make str_old0 the current str_new0
+  }
+}
+
+// display battery voltage to 1dp, using 8x8 font.
+void PCD8544::Battery_smallfont(float battery, uint8_t page, uint8_t col) {
+  dtostrf(battery,4,2,str_new2);
+  str_new2[4] = 'v';
+  for (int i=0; i<5; i++) {
+    if (str_new2[i] != str_old2[i]) write8x8Char(page, col+i*8, str_new2[i], Font8x8_);
+    str_old2[i] = str_new2[i]; // after loop finish make str_old2 the current str_new2
   }
 }
 
