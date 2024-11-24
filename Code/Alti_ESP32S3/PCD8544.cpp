@@ -26,6 +26,7 @@ PCD8544::PCD8544(uint8_t RST, uint8_t CE, uint8_t DC, uint8_t DIN, uint8_t CLK):
     str_old0[i] = ' ';
     str_old1[i] = ' ';
     str_old2[i] = ' ';
+    str_old3[i] = ' ';
   }        
 }
 
@@ -147,13 +148,39 @@ void PCD8544::Temperature(float temp_, uint8_t page, uint8_t col) {
   }
 }
 
-// display battery voltage to 1dp, using 8x8 font.
+// generate and display formatted string for temperature temp_,
+// but for speed only redisplay changed characters.
+// minimal display using only 2 chars with 0dp. if <=-10 then no sign.
+void PCD8544::Temperature_tinyfont(float temp_, uint8_t page, uint8_t col) {
+  temp_ = temp_ - 0.5; // adjustment for circuit temp being above ambient
+  if (temp_<=-10.0) temp_ = -1.0 * temp_*-1.0;
+  dtostrf(temp_,2,0,str_new0);
+  str_new2[2] = 0;  
+  for (int i=0; i<2; i++) {
+    if (str_new0[i] != str_old0[i]) writeBlock(page, col+4*i, 1, 4,  ASCII2offset(str_new0[i], 0x0004), FontNums3x5);
+    str_old0[i] = str_new0[i]; // after loop finish make str_old0 the current str_new0
+  }
+    Serial.println(temp_);
+    Serial.println(str_new0);
+}
+
+
+// display battery voltage to 2dp, using 8x8 font.
 void PCD8544::Battery_smallfont(float battery, uint8_t page, uint8_t col) {
   dtostrf(battery,4,2,str_new2);
   str_new2[4] = 'v';
   for (int i=0; i<5; i++) {
     if (str_new2[i] != str_old2[i]) write8x8Char(page, col+i*8, str_new2[i], Font8x8_);
     str_old2[i] = str_new2[i]; // after loop finish make str_old2 the current str_new2
+  }
+}
+
+// display battery*10 voltage to 0dp, using 3x5 font.
+void PCD8544::Battery_tinyfont(float battery, uint8_t page, uint8_t col) {
+  dtostrf(battery*10.0,2,0,str_new3);
+  for (int i=0; i<2; i++) {
+    if (str_new3[i] != str_old3[i]) writeBlock(page, col+4*i, 1, 4,  ASCII2offset(str_new3[i], 0x0004), FontNums3x5);
+    str_old3[i] = str_new3[i]; // after loop finish make str_old3 the current str_new3
   }
 }
 

@@ -88,15 +88,11 @@ void loop() {
     BARO.getTempAndPressure(&temp, &pressure);
   }
 
-  // display current temperature measured by the MS5637 (and used to
-  // improve calculation of air pressure)
-//  lcd.Temperature(temp, 0, 2);
-
   // Calculate and display the altitude relative to where the altimeter was turned on
   altRel = BARO.pressure2altitude(pressure) - altBase; 
+  //altRel = 13456.0;
   if (altRel < 0.0) altRel = -1.0*altRel; // take the absolute value 
   lcd.Altitude_largefont(altRel);
-//  lcd.Altitude_smallfont(altRel, 2, 0);
 
   Serial.print(temp);
   Serial.print(" ");
@@ -107,18 +103,26 @@ void loop() {
   lcd.Altitude_largefont(90); delay(2000);
   lcd.Altitude_largefont(853); delay(2000);
   lcd.Altitude_largefont(1234); delay(2000);
+  lcd.Altitude_largefont(12345); delay(2000);
   lcd.Altitude_largefont(23400); delay(2000);
   lcd.Altitude_largefont(56700); delay(2000);
   lcd.Altitude_largefont(8900); delay(2000);
 */
-  // Read and p[rint the raw ADC value 
+
+  // Read raw ADC value, convert to battery voltage 
   adcRaw = analogRead(BATTERY_PIN);
-  batVol = adcRaw*0.00102; // raw adc value to battery voltage conversion
-    lcd.Battery_smallfont(batVol, 0, 0);
+  batVol = adcRaw*0.000940767+0.287561; // raw adc value to battery voltage conversion
+  //lcd.Battery_smallfont(batVol, 0, 0);
+  lcd.Battery_tinyfont(batVol, 0, 76);
+
   Serial.print("Raw ADC: ");
   Serial.println(adcRaw);
   Serial.print("Battery Volatge: ");
   Serial.println(batVol);
+
+  // display current temperature measured by the MS5637 (and used to
+  // improve calculation of air pressure)
+  lcd.Temperature_tinyfont(temp, 1, 76);
 
   delay(1000);
 }
