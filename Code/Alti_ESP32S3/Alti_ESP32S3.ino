@@ -3,6 +3,16 @@
 #include "Font.h"
 
 
+
+// To Do :
+// 1. Flash battery voltage )Top righ) when drops to 3.2V
+// 2. Make nicer big numbers fgonst for displaying Altitude
+// 3. buy DSDT smallest switch possible
+
+
+
+
+
 // Define the analog pin connected to the voltage divider
 #define BATTERY_PIN 8 // GPIO8 (A9)
 
@@ -94,35 +104,41 @@ void loop() {
   if (altRel < 0.0) altRel = -1.0*altRel; // take the absolute value 
   lcd.Altitude_largefont(altRel);
 
-  Serial.print(temp);
-  Serial.print(" ");
-  Serial.println(altRel);
+  // display current temperature measured by the MS5637 (and used to
+  // improve calculation of air pressure above)
+  temp = temp - 0.5; // fudjustment for circuit temp being above ambient
+  lcd.Temperature_tinyfont(temp, 1, 76);
 
-/*
-  lcd.Altitude_largefont(34); delay(2000);
-  lcd.Altitude_largefont(90); delay(2000);
-  lcd.Altitude_largefont(853); delay(2000);
-  lcd.Altitude_largefont(1234); delay(2000);
-  lcd.Altitude_largefont(12345); delay(2000);
-  lcd.Altitude_largefont(23400); delay(2000);
-  lcd.Altitude_largefont(56700); delay(2000);
-  lcd.Altitude_largefont(8900); delay(2000);
-*/
-
-  // Read raw ADC value, convert to battery voltage 
+  // Read raw ADC value, convert to battery voltage and display 
   adcRaw = analogRead(BATTERY_PIN);
-  batVol = adcRaw*0.000940767+0.287561; // raw adc value to battery voltage conversion
-  //lcd.Battery_smallfont(batVol, 0, 0);
+  batVol = adcRaw*0.000940767+0.287561; // raw adc to battery voltage conversion
   lcd.Battery_tinyfont(batVol, 0, 76);
 
+  delay(2000);
+  lcd.Altitude_largefont(-1.0);  delay(2000);
+  lcd.Altitude_largefont(-13456.0);  delay(2000);
+  lcd.Altitude_largefont(-23456.0);  delay(2000);
+  lcd.Altitude_largefont(-13456.0);  delay(2000);
+  lcd.Altitude_largefont(-1345.0);  delay(2000);
+  lcd.Altitude_largefont(-134.0);  delay(2000);
+  lcd.Altitude_largefont(-13.0);  delay(2000);
+  lcd.Altitude_largefont(-1.0);  delay(2000);
+  lcd.Altitude_largefont(-0.9);  delay(2000);
+  lcd.Altitude_largefont(13456.0);  delay(2000);
+  lcd.Altitude_largefont(1345.0);  delay(2000);
+  lcd.Altitude_largefont(134.0);  delay(2000);
+  lcd.Altitude_largefont(13.0);  delay(2000);
+  lcd.Altitude_largefont(1.0);  delay(2000);
+  lcd.Altitude_largefont(0.9);  delay(2000);
+
+  Serial.print("Altitude: ");
+  Serial.println(altRel);
+  Serial.print("Adjusted temp: ");
+  Serial.println(temp);
   Serial.print("Raw ADC: ");
   Serial.println(adcRaw);
   Serial.print("Battery Volatge: ");
   Serial.println(batVol);
-
-  // display current temperature measured by the MS5637 (and used to
-  // improve calculation of air pressure)
-  lcd.Temperature_tinyfont(temp, 1, 76);
 
   delay(1000);
 }

@@ -36,11 +36,11 @@ class PCD8544 : public Print {
 
     void writeBlock(uint8_t page, uint8_t col, uint8_t pages, uint8_t cols, uint16_t address, const uint8_t Arr[]);
     void write8x8Char(uint8_t page, uint8_t column, uint16_t charCode, const uint8_t Arr[][8]);
-    void Temperature(float temp_, uint8_t page, uint8_t col);
+    void Temperature(float temp_, uint8_t page, uint8_t col); // not used
     void Temperature_tinyfont(float temp_, uint8_t page, uint8_t col);
-    void Battery_smallfont(float battery, uint8_t page, uint8_t col);
+    void Battery_smallfont(float battery, uint8_t page, uint8_t col); // not used
     void Battery_tinyfont(float battery, uint8_t page, uint8_t col);
-    void Altitude_smallfont(float altitude, uint8_t page, uint8_t col);
+    void Altitude_smallfont(float altitude, uint8_t page, uint8_t col); // not used
     void Altitude_largefont(float altitude);
     uint16_t ASCII2offset(char char_, uint16_t offsetScale);
 
@@ -49,6 +49,7 @@ class PCD8544 : public Print {
   private:
 
     // low level SPI comms with PC8544
+    // actually not used here, just integrated in above functions!
     void TransferStart();
     void CommandMode(byte cm);
     void DataMode();

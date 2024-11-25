@@ -132,7 +132,6 @@ void PCD8544::write8x8Char(uint8_t page, uint8_t column, uint16_t charCode, cons
 // generate and display formatted string for temperature temp_,
 // but for speed only redisplay changed characters.
 void PCD8544::Temperature(float temp_, uint8_t page, uint8_t col) {
-  //temp_ = -20.6;
   int w = 5; // width of text in characters
   if (temp_<=-10.0) {
     dtostrf(temp_,3,0,str_new0);  
@@ -143,8 +142,10 @@ void PCD8544::Temperature(float temp_, uint8_t page, uint8_t col) {
     str_new0[4] = 0x00; // degree character
   }
   for (int i=0; i<w; i++) {
-    if (str_new0[i] != str_old0[i]) write8x8Char(page, col+i*8, str_new0[i], Font8x8_);
-    str_old0[i] = str_new0[i]; // after loop finish make str_old0 the current str_new0
+    if (str_new0[i] != str_old0[i]) {
+      write8x8Char(page, col+i*8, str_new0[i], Font8x8_);
+      str_old0[i] = str_new0[i]; // after loop finish make str_old0 the current str_new0
+    }      
   }
 }
 
@@ -152,16 +153,15 @@ void PCD8544::Temperature(float temp_, uint8_t page, uint8_t col) {
 // but for speed only redisplay changed characters.
 // minimal display using only 2 chars with 0dp. if <=-10 then no sign.
 void PCD8544::Temperature_tinyfont(float temp_, uint8_t page, uint8_t col) {
-  temp_ = temp_ - 0.5; // adjustment for circuit temp being above ambient
   if (temp_<=-10.0) temp_ = -1.0 * temp_*-1.0;
   dtostrf(temp_,2,0,str_new0);
   str_new2[2] = 0;  
   for (int i=0; i<2; i++) {
-    if (str_new0[i] != str_old0[i]) writeBlock(page, col+4*i, 1, 4,  ASCII2offset(str_new0[i], 0x0004), FontNums3x5);
-    str_old0[i] = str_new0[i]; // after loop finish make str_old0 the current str_new0
+    if (str_new0[i] != str_old0[i]) {
+      writeBlock(page, col+4*i, 1, 4,  ASCII2offset(str_new0[i], 0x0004), FontNums3x5);
+      str_old0[i] = str_new0[i]; // after loop finish make str_old0 the current str_new0
+    }      
   }
-    Serial.println(temp_);
-    Serial.println(str_new0);
 }
 
 
@@ -170,8 +170,10 @@ void PCD8544::Battery_smallfont(float battery, uint8_t page, uint8_t col) {
   dtostrf(battery,4,2,str_new2);
   str_new2[4] = 'v';
   for (int i=0; i<5; i++) {
-    if (str_new2[i] != str_old2[i]) write8x8Char(page, col+i*8, str_new2[i], Font8x8_);
-    str_old2[i] = str_new2[i]; // after loop finish make str_old2 the current str_new2
+    if (str_new2[i] != str_old2[i]) { 
+      write8x8Char(page, col+i*8, str_new2[i], Font8x8_);
+      str_old2[i] = str_new2[i]; // after loop finish make str_old2 the current str_new2
+    }      
   }
 }
 
@@ -179,8 +181,10 @@ void PCD8544::Battery_smallfont(float battery, uint8_t page, uint8_t col) {
 void PCD8544::Battery_tinyfont(float battery, uint8_t page, uint8_t col) {
   dtostrf(battery*10.0,2,0,str_new3);
   for (int i=0; i<2; i++) {
-    if (str_new3[i] != str_old3[i]) writeBlock(page, col+4*i, 1, 4,  ASCII2offset(str_new3[i], 0x0004), FontNums3x5);
-    str_old3[i] = str_new3[i]; // after loop finish make str_old3 the current str_new3
+    if (str_new3[i] != str_old3[i]) {
+      writeBlock(page, col+4*i, 1, 4,  ASCII2offset(str_new3[i], 0x0004), FontNums3x5);
+      str_old3[i] = str_new3[i]; // after loop finish make str_old3 the current str_new3
+    }      
   }
 }
 
@@ -192,20 +196,51 @@ void PCD8544::Altitude_smallfont(float altitude, uint8_t page, uint8_t col) {
   for (int i=0; i<5; i++) {
     if (str_new[i] != str_old[i]) {
       writeBlock(page, col+16*i, 3, 16,  ASCII2offset(str_new[i], 0x0030), FontNums16x24_);
+      str_old[i] = str_new[i]; // after loop finish make str_old the current str_new
     }
-    str_old[i] = str_new[i]; // after loop finish make str_old the current str_new
   }
 }     
 
-// generate and display formatted string for altitude, mainly using 24x48 font.
+// generate and display formatted string for altitude, mainly using the 24x48 large font.
+// the last two digits for feet and tens of feet use the tiny font
 void PCD8544::Altitude_largefont(float altitude) {
+  Serial.println(altitude);
   uint16_t point = 0x0008;
-  str_new1[5] = 'p'; // a bit of a fudge to avoid redrawing custom point
+  uint16_t thickMinus = 0x0010;
+  str_new1[6] = 'p'; // a bit of a fudge to avoid redrawing custom point
+  str_new1[6] = 'p'; // a bit of a fudge to avoid redrawing custom point
 
-  dtostrf(altitude/10.0,4,0,str_new1);
+  // extracting absolute altitude string and dealing with negative case
+  // quite messy since dealing with three different size minus signs.
+  boolean isneg = false;
+  boolean issml = false;  
+  boolean isbig = false;  
+  if (altitude<0.0) {
+    altitude = -1.0 * altitude;
+    isneg = true;
+  }    
+  dtostrf(altitude,5,0,str_new1);
+  if (isneg) {
+    if (altitude >= 10000.0) {
+      isbig = true;
+    } else if (altitude >= 1000.0) {
+      isbig = false;
+      str_new1[0] = '-';
+    } else if (altitude >= 100.0) {
+      str_new1[0] = '-';
+    } else if (altitude >= 10.0) {
+      issml = true;
+    } else if (altitude >= 1.0) {
+      issml = false;
+      str_new1[3] = '-';
+    } else {
+      str_new1[4] = '0';
+    }
+  }
+
   if (altitude < 100.0) {
     point = 0x000C; // make point blank
-    str_new1[5] = 'b';
+    str_new1[6] = 'b';
   } else if (altitude < 1000.0) {
     str_new1[1] = '0';    
   }
@@ -213,25 +248,41 @@ void PCD8544::Altitude_largefont(float altitude) {
   if (str_new1[0] != str_old1[0]) {
     writeBlock(0, 24*0, 6, 24,  ASCII2offset(str_new1[0], 0x0090), FontNums24x48);
     str_old1[0] = str_new1[0]; // after display make str_old1 the current str_new1
+
+    // dealing with negative sign if any in front of 10 thousands digit
+    if (isbig) writeBlock(3, 0, 1, 8, thickMinus, Symbols4x8);
   }
+
   if (str_new1[1] != str_old1[1]) {
     writeBlock(0, 24*1, 6, 24,  ASCII2offset(str_new1[1], 0x0090), FontNums24x48);
     str_old1[1] = str_new1[1];
   }
-  if (str_new1[5] != str_old1[5]) {
+
+  if (str_new1[6] != str_old1[6]) {
     writeBlock(3, 24*2, 1, 4,  point, Symbols4x8);
-    str_old1[5] = str_new1[5];
+    str_old1[6] = str_new1[6];
   }
+
   if (str_new1[2] != str_old1[2]) {
     writeBlock(0, 24*2+4, 6, 24,  ASCII2offset(str_new1[2], 0x0090), FontNums24x48);
     str_old1[2] = str_new1[2];
   }
+
+  // dealing with tiny negative sign in fron to two tiny numbers, including fudgy edge cases
+  if (issml) writeBlock(5, 72, 1, 4,  ASCII2offset('-', 0x0004), FontNums3x5);
+  else writeBlock(5, 72, 1, 4,  ASCII2offset(' ', 0x0004), FontNums3x5);
+  
   if (str_new1[3] != str_old1[3]) {
-    write8x8Char(5, 24*3+4, str_new1[3], Font8x8_);
+    writeBlock(5, 76, 1, 4,  ASCII2offset(str_new1[3], 0x0004), FontNums3x5);
     str_old1[3] = str_new1[3];
   }
-}     
 
+  if (str_new1[4] != str_old1[4]) {
+    writeBlock(5, 80, 1, 4,  ASCII2offset(str_new1[4], 0x0004), FontNums3x5);
+    str_old1[4] = str_new1[4];
+  }
+  Serial.println(str_new1);
+}     
 
 // a private utility function that maps numbers 'only' font chars to memmory offsets
 // in font bitmap arrays, needs offsetScale argument to make if useful for different size fonts
