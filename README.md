@@ -2,6 +2,6 @@ This is a repository for my digital altimeter based on the ESP32-S3 microcontrol
 
 When switched on the altimeter sets to zero, so as to give you the height above ground in thousands of feet. It displays the height in large numerical characters to the nearest 100 feet, with the remaining altitude < 100 ft in a very small font. Negative altitudes are displayed as required.
 
-In addition the voltage x 10 is displayed in a tiny font at the top right of the screen, under it is displayed the approximate air temnperature also in a tiny font. If the battery voltage drops to 3.2V (32 displayed) the voltage displayed is replayed by a flashing blosk.
+In addition the voltage x 10 is displayed in a tiny font at the top right of the screen, under it is displayed the approximate air temnperature also in a tiny font. If the battery voltage drops to 3.2V (32 displayed) the voltage displayed is replayed by a flashing block.
 
 ![ESP32-S3 pinout](Images/ESP32-S3_pinout.png)

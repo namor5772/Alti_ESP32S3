@@ -114,6 +114,7 @@ void loop() {
   batVol = adcRaw*0.000940767+0.287561; // raw adc to battery voltage conversion
   lcd.Battery_tinyfont(batVol, 0, 76);
 
+/*
   delay(2000);
   lcd.Altitude_largefont(-1.0);  delay(2000);
   lcd.Altitude_largefont(-13456.0);  delay(2000);
@@ -130,6 +131,7 @@ void loop() {
   lcd.Altitude_largefont(13.0);  delay(2000);
   lcd.Altitude_largefont(1.0);  delay(2000);
   lcd.Altitude_largefont(0.9);  delay(2000);
+*/
 
   Serial.print("Altitude: ");
   Serial.println(altRel);
@@ -140,5 +142,5 @@ void loop() {
   Serial.print("Battery Volatge: ");
   Serial.println(batVol);
 
-  delay(1000);
+  delay(100);
 }
