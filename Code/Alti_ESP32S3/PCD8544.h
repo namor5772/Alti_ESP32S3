@@ -40,6 +40,7 @@ class PCD8544 : public Print {
     void Temperature_tinyfont(float temp_, uint8_t page, uint8_t col);
     void Battery_smallfont(float battery, uint8_t page, uint8_t col); // not used
     void Battery_tinyfont(float battery, uint8_t page, uint8_t col);
+    void BatteryFlash_tinyfont(bool flashOn, uint8_t page, uint8_t col);
     void Altitude_smallfont(float altitude, uint8_t page, uint8_t col); // not used
     void Altitude_largefont(float altitude);
     uint16_t ASCII2offset(char char_, uint16_t offsetScale);

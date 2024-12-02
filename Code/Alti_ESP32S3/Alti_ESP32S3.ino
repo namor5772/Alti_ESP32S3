@@ -2,12 +2,14 @@
 #include "PCD8544.h"
 #include "Font.h"
 
+#include <Preferences.h>
+
 
 
 // To Do :
-// 1. Flash battery voltage )Top righ) when drops to 3.2V
-// 2. Make nicer big numbers fgonst for displaying Altitude
-// 3. buy DSDT smallest switch possible
+// DONE 1. Flash battery voltage (Top righ) when drops to 3.2V
+// 2. Make nicer big numbers font for displaying Altitude
+// DONE 3. buy DSDT smallest switch possible
 
 
 
@@ -52,21 +54,43 @@ uint32_t chipId = 0;
 float temp, pressure, altBase, altRel;
 uint16_t adcRaw;
 float batVol; 
-
+bool isGround;
 
 void setup() {
   Serial.begin(115200);
 
-  for (int i = 0; i < 17; i = i + 8) {
-    chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
+  Preferences preferences;
+  preferences.begin("alti_prefs", false);
+
+  // reads the persistent isGround boolean value
+  bool isGround = preferences.getBool("isGround", false);
+
+  // setup MS5637 sensor (An instance of the MS5637 object BARO has been constructed above)
+  BARO.begin();
+  BARO.dumpDebugOutput();
+  BARO.getTempAndPressure(&temp, &pressure);
+
+  // toggles mode as ground or absolute between powering on altimeter
+  if (isGround) {
+    altBase = BARO.pressure2altitude(pressure);
+    preferences.putBool("isGround", false);
   }
+  else { // if not isGround
+    altBase = 0.0;
+    preferences.putBool("isGround", true);
+  }
+  Serial.println(altBase);  
+
+  // just some chip info on startup
+  for (int i = 0; i < 17; i = i + 8) {chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;}
   Serial.printf("ESP32 Chip model = %s Rev %d\n", ESP.getChipModel(), ESP.getChipRevision());
   Serial.printf("This chip has %d cores\n", ESP.getChipCores());
   Serial.print("Chip ID: ");
   Serial.print(chipId);
   Serial.println("\n");
 
-  // setup lcd screen and display splash screen for 2 seconds
+  // setup lcd screen and display splash screen for 4 seconds
+  // then clear in readiness for normal data display
   lcd.setDisplayMode(NORMAL);
   lcd.setContrast(60);
   lcd.print("Alti ESP32v2.0 Nov24");
@@ -76,15 +100,6 @@ void setup() {
   lcd.print("----------");
   delay(4000);
   lcd.clear();
-
-  // setup MS5637 sensor (An instance of the MS5637 object BARO has been constructed above)
-  BARO.begin();
-  BARO.dumpDebugOutput();
-  BARO.getTempAndPressure(&temp, &pressure);
-//  altBase = BARO.pressure2altitude(pressure);
-  altBase = 0.0;
-  Serial.println(altBase);  
-
 }
 
 
@@ -111,8 +126,26 @@ void loop() {
 
   // Read raw ADC value, convert to battery voltage and display 
   adcRaw = analogRead(BATTERY_PIN);
-  batVol = adcRaw*0.000940767+0.287561; // raw adc to battery voltage conversion
-  lcd.Battery_tinyfont(batVol, 0, 76);
+  batVol = adcRaw*0.000940767+0.31; // 0.287561; // raw adc to battery voltage conversion
+  if (batVol>4.1){ //>3.19
+    // just display battery voltage
+    lcd.Battery_tinyfont(batVol, 0, 76);
+  }
+  else { //battery voltage too low need to charge LiPo
+    // flash a block in the battery voltage display position
+    float mTime = millis();
+    mTime = mTime-floor(mTime/1000.0)*1000.0;
+    bool isFlash = false;
+    if (mTime<500.0) isFlash = true;
+    lcd.BatteryFlash_tinyfont(isFlash, 0, 76);
+  }
+
+/*
+  float mTime = millis();
+  mTime = mTime-floor(mTime/1000.0)*1000.0;
+  Serial.println(mTime);
+*/
+
 
 /*
   delay(2000);

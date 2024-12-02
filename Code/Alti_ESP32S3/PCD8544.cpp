@@ -188,6 +188,28 @@ void PCD8544::Battery_tinyfont(float battery, uint8_t page, uint8_t col) {
   }
 }
 
+// flash block at battery voltage position if it is too low
+void PCD8544::BatteryFlash_tinyfont(bool flashOn, uint8_t page, uint8_t col) {
+  uint16_t charOfs;
+  if (flashOn) {
+    charOfs = 0x0038; // block
+    str_new3[0]=1;
+    str_new3[1]=1;
+  }
+  else {
+    charOfs = 0x0028; // blank
+    str_new3[0]=2;
+    str_new3[1]=2;
+  }
+
+  for (int i=0; i<2; i++) {
+    if (str_new3[i] != str_old3[i]) {
+      writeBlock(page, col+4*i, 1, 4, charOfs, FontNums3x5);
+      str_old3[i] = str_new3[i]; // after loop finish make str_old3 the current str_new3
+    }      
+  }
+}
+
 // generate and display formatted string for altitude, using 16x24 font.
 // 3 pages (24 bits) high, In feet, 2 dp, can change position.
 // but for speed only redisplay changed characters.
