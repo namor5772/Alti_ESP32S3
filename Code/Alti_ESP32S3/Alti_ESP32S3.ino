@@ -6,13 +6,9 @@
 #include <esp_sleep.h>
 #include <esp32-hal-gpio.h>
 
-
 // To Do :
-// 2. Make nicer big numbers font for displaying Altitude
-
-
-
-
+// 1. Make nicer big numbers font for displaying Altitude
+// 2. Test Deep-Sleep functionality
 
 // Define the analog pin connected to the voltage divider
 #define BATTERY_PIN 8 // GPIO8 (A9)
@@ -32,15 +28,14 @@
 // 6 - DN<MOSI> (DIN) - GPIO4 D3 
 // 7 - SCLK (CLK)     - GPIO9 D10
 // 8 - LED 
+// An instance called lcd of the PCD8544 class is created
+// The module uses an enhanced bit-bashed 3-Wire SPI communications protcol
+// The specified pins are: CLK, MOS, RES, DC, CS.
 #define RST 2
 #define CE 1
 #define DC 3
 #define DIN 4
 #define CLK 9
-
-// An instance called lcd of the PCD8544 class is created
-// The module uses an enhanced bit-bashed 3-Wire SPI communications protcol
-// The specified pins are: CLK, MOS, RES, DC, CS.
 PCD8544 lcd{RST, CE, DC, DIN, CLK};
 
 // An instance of the MS5637 class called BARO is created
@@ -50,23 +45,23 @@ PCD8544 lcd{RST, CE, DC, DIN, CLK};
 // 2 SDA - connect to SDA pin on micro (also called GPIO5 & D4)
 // 3 SCL - connect to SCL pin on micro (also called GPIO6 & D5)
 // 4 VCC - connect to 3V3 pin on micro
-
 MS5637 BARO;
 
 // global variables
-uint32_t chipId = 0;
-float temp, pressure, altBase, altRel;
-uint16_t adcRaw;
-float batVol; 
 bool isGround;
+uint32_t chipId = 0;
+uint16_t adcRaw;
+float temp, pressure, altBase, altRel, batVol;
 
 void setup() {
   Serial.begin(115200);
 
-  Preferences preferences;
-  preferences.begin("alti_prefs", false);
+  // setup deep-sleep on/off pin
+  pinMode(ONOFF_PIN,INPUT_PULLUP);
 
   // reads the persistent isGround boolean value
+  Preferences preferences;
+  preferences.begin("alti_prefs", false);
   bool isGround = preferences.getBool("isGround", false);
 
   // setup MS5637 sensor (An instance of the MS5637 object BARO has been constructed above)
@@ -74,7 +69,7 @@ void setup() {
   BARO.dumpDebugOutput();
   BARO.getTempAndPressure(&temp, &pressure);
 
-  // toggles mode as ground or absolute between powering on altimeter
+  // toggles mode as ground or absolute between powering altimeter
   if (isGround) {
     altBase = BARO.pressure2altitude(pressure);
     preferences.putBool("isGround", false);
@@ -105,9 +100,7 @@ void setup() {
   delay(4000);
   lcd.clear();
 
-  pinMode(ONOFF_PIN,INPUT_PULLUP);
 }
-
 
 void loop() {
   if (!BARO.isOK()) {
@@ -161,8 +154,8 @@ void loop() {
   if (pinState == LOW) {
     Serial.println("LOW");
 
-    // setup lcd screen and display splash screen for 4 seconds
-    // then clear in readiness for normal data display
+    // setup lcd screen and display 'shutdown' screen for 4 seconds
+    // then clear just before 'shutdown'
     lcd.clear();
     // lcd.setCursor(0, 1);
     lcd.print("----------");
@@ -173,9 +166,6 @@ void loop() {
     lcd.print("----------");
     delay(5000);
 
-    // Enable wakeup source (optional: modify this depending on your wakeup needs) 
-    //esp_sleep_enable_timer_wakeup(10 * 1000000); // Wake up after 10 seconds
-
     // Enable EXT0 wake-up source (wake up when pin goes LOW) 
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_7, 0);
 
@@ -185,5 +175,6 @@ void loop() {
   else {
       Serial.println("HIGH");
   }
+
   delay(100);
 }
