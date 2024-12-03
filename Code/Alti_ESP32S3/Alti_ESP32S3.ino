@@ -3,13 +3,12 @@
 #include "Font.h"
 
 #include <Preferences.h>
-
+#include <esp_sleep.h>
+#include <esp32-hal-gpio.h>
 
 
 // To Do :
-// DONE 1. Flash battery voltage (Top righ) when drops to 3.2V
 // 2. Make nicer big numbers font for displaying Altitude
-// DONE 3. buy DSDT smallest switch possible
 
 
 
@@ -17,6 +16,11 @@
 
 // Define the analog pin connected to the voltage divider
 #define BATTERY_PIN 8 // GPIO8 (A9)
+
+// Define the pin connected to a momentary button, to toggle
+// deep-sleep mode for trhis altimeter, as an alternative to
+// a physical switch that disconnects LiPo battery.
+#define ONOFF_PIN 7 // GPIO7 (D8)
 
 // Nokia 5772 - PCD8544 driver chip
 // and pinout to SEED ESP32s3 MICRO
@@ -100,6 +104,8 @@ void setup() {
   lcd.print("----------");
   delay(4000);
   lcd.clear();
+
+  pinMode(ONOFF_PIN,INPUT_PULLUP);
 }
 
 
@@ -129,7 +135,8 @@ void loop() {
   batVol = adcRaw*0.000940767+0.31; // 0.287561; // raw adc to battery voltage conversion
   if (batVol>3.19){
     // just display battery voltage
-    lcd.Battery_tinyfont(batVol, 0, 76);
+//    lcd.Battery_tinyfont(batVol, 0, 76);
+    lcd.Battery_tinyfont2(batVol, 0, 72);
   }
   else { //battery voltage too low so indicate need to charge LiPo
     // flash a block in the battery voltage display position
@@ -141,25 +148,6 @@ void loop() {
     lcd.BatteryFlash_tinyfont(isFlash, 0, 76);
   }
 
-/*
-  delay(2000);
-  lcd.Altitude_largefont(-1.0);  delay(2000);
-  lcd.Altitude_largefont(-13456.0);  delay(2000);
-  lcd.Altitude_largefont(-23456.0);  delay(2000);
-  lcd.Altitude_largefont(-13456.0);  delay(2000);
-  lcd.Altitude_largefont(-1345.0);  delay(2000);
-  lcd.Altitude_largefont(-134.0);  delay(2000);
-  lcd.Altitude_largefont(-13.0);  delay(2000);
-  lcd.Altitude_largefont(-1.0);  delay(2000);
-  lcd.Altitude_largefont(-0.9);  delay(2000);
-  lcd.Altitude_largefont(13456.0);  delay(2000);
-  lcd.Altitude_largefont(1345.0);  delay(2000);
-  lcd.Altitude_largefont(134.0);  delay(2000);
-  lcd.Altitude_largefont(13.0);  delay(2000);
-  lcd.Altitude_largefont(1.0);  delay(2000);
-  lcd.Altitude_largefont(0.9);  delay(2000);
-*/
-
   Serial.print("Altitude: ");
   Serial.println(altRel);
   Serial.print("Adjusted temp: ");
@@ -169,5 +157,33 @@ void loop() {
   Serial.print("Battery Volatge: ");
   Serial.println(batVol);
 
-  delay(50);
+  int pinState = digitalRead(ONOFF_PIN);
+  if (pinState == LOW) {
+    Serial.println("LOW");
+
+    // setup lcd screen and display splash screen for 4 seconds
+    // then clear in readiness for normal data display
+    lcd.clear();
+    // lcd.setCursor(0, 1);
+    lcd.print("----------");
+    lcd.print("-SHUTTING-");
+    lcd.print("---DOWN---");    
+    lcd.print("---INTO---");
+    lcd.print("DEEP SLEEP");
+    lcd.print("----------");
+    delay(5000);
+
+    // Enable wakeup source (optional: modify this depending on your wakeup needs) 
+    //esp_sleep_enable_timer_wakeup(10 * 1000000); // Wake up after 10 seconds
+
+    // Enable EXT0 wake-up source (wake up when pin goes LOW) 
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_7, 0);
+
+    // Enter deep sleep mode 
+    esp_deep_sleep_start();
+  } 
+  else {
+      Serial.println("HIGH");
+  }
+  delay(100);
 }
