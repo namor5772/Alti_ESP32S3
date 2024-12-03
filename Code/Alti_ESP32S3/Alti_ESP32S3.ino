@@ -127,25 +127,19 @@ void loop() {
   // Read raw ADC value, convert to battery voltage and display 
   adcRaw = analogRead(BATTERY_PIN);
   batVol = adcRaw*0.000940767+0.31; // 0.287561; // raw adc to battery voltage conversion
-  if (batVol>4.1){ //>3.19
+  if (batVol>3.19){
     // just display battery voltage
     lcd.Battery_tinyfont(batVol, 0, 76);
   }
-  else { //battery voltage too low need to charge LiPo
+  else { //battery voltage too low so indicate need to charge LiPo
     // flash a block in the battery voltage display position
+    // half second on, half second off.
     float mTime = millis();
     mTime = mTime-floor(mTime/1000.0)*1000.0;
     bool isFlash = false;
     if (mTime<500.0) isFlash = true;
     lcd.BatteryFlash_tinyfont(isFlash, 0, 76);
   }
-
-/*
-  float mTime = millis();
-  mTime = mTime-floor(mTime/1000.0)*1000.0;
-  Serial.println(mTime);
-*/
-
 
 /*
   delay(2000);
@@ -175,5 +169,5 @@ void loop() {
   Serial.print("Battery Volatge: ");
   Serial.println(batVol);
 
-  delay(100);
+  delay(50);
 }
