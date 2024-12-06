@@ -56,6 +56,9 @@ float temp, pressure, altBase, altRel, batVol;
 void setup() {
   Serial.begin(115200);
 
+  // initialize digital pin LED_BUILTIN as an output.
+  pinMode(LED_BUILTIN, OUTPUT);
+
   // setup deep-sleep on/off pin
   pinMode(ONOFF_PIN,INPUT_PULLUP);
 
@@ -147,7 +150,7 @@ void loop() {
   Serial.println(temp);
   Serial.print("Raw ADC: ");
   Serial.println(adcRaw);
-  Serial.print("Battery Volatge: ");
+  Serial.print("Battery Voltage: ");
   Serial.println(batVol);
 
   int pinState = digitalRead(ONOFF_PIN);
@@ -175,6 +178,8 @@ void loop() {
   else {
       Serial.println("HIGH");
   }
-
-  delay(100);
+  digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
+  delay(1000);                      // wait for a second
+  digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
+  delay(1000);                      // wait for a second
 }
