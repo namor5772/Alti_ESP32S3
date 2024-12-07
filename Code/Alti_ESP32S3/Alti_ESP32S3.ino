@@ -59,7 +59,8 @@ void setup() {
   // initialize digital pin LED_BUILTIN as an output.
   pinMode(LED_BUILTIN, OUTPUT);
 
-  // setup deep-sleep on/off pin
+  // setup deep-sleep on/off pin,
+  // actually need an external pull-up (4.7k)
   pinMode(ONOFF_PIN,INPUT_PULLUP);
 
   // reads the persistent isGround boolean value
@@ -95,14 +96,14 @@ void setup() {
   // then clear in readiness for normal data display
   lcd.setDisplayMode(NORMAL);
   lcd.setContrast(60);
+//  lcd.clear();
   lcd.print("Alti ESP32v2.0 Nov24");
   lcd.print("----------");
   lcd.setCursor(0, 3);
   lcd.print("Roman M   Groblicki ");
   lcd.print("----------");
-  delay(4000);
+  delay(3000);
   lcd.clear();
-
 }
 
 void loop() {
@@ -167,6 +168,7 @@ void loop() {
     lcd.print("---INTO---");
     lcd.print("DEEP SLEEP");
     lcd.print("----------");
+    Serial.println("SHUTTING DOWN");
     delay(5000);
 
     // Enable EXT0 wake-up source (wake up when pin goes LOW) 
@@ -174,12 +176,20 @@ void loop() {
 
     // Enter deep sleep mode 
     esp_deep_sleep_start();
+
   } 
   else {
       Serial.println("HIGH");
   }
+
+  
   digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-  delay(1000);                      // wait for a second
+  delay(200);                      // wait for a second
   digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
-  delay(1000);                      // wait for a second
+  delay(200);                      // wait for a second
+
+
+  delay(50);
+  Serial.println("LOOPING");
+  Serial.println(" ");
 }
