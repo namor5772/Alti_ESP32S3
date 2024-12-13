@@ -27,6 +27,7 @@ PCD8544::PCD8544(uint8_t RST, uint8_t CE, uint8_t DC, uint8_t DIN, uint8_t CLK):
     str_old1[i] = ' ';
     str_old2[i] = ' ';
     str_old3[i] = ' ';
+    str_old4[i] = ' ';
   }        
 }
 
@@ -152,12 +153,12 @@ void PCD8544::Temperature(float temp_, uint8_t page, uint8_t col) {
 // generate and display formatted string for temperature temp_,
 // but for speed only redisplay changed characters.
 // minimal display using only 2 chars with 0dp. if <=-10 then no sign.
-void PCD8544::Temperature_tinyfont(float temp_, uint8_t page, uint8_t col) {
+void PCD8544::Temperature_tinyfont(float temp_, uint8_t page, uint8_t col, bool Redraw) {
   if (temp_<=-10.0) temp_ = -1.0 * temp_*-1.0;
   dtostrf(temp_,2,0,str_new0);
   str_new2[2] = 0;  
   for (int i=0; i<2; i++) {
-    if (str_new0[i] != str_old0[i]) {
+    if ((str_new0[i] != str_old0[i]) || Redraw) {
       writeBlock(page, col+4*i, 1, 4,  ASCII2offset(str_new0[i], 0x0004), FontNums3x5);
       str_old0[i] = str_new0[i]; // after loop finish make str_old0 the current str_new0
     }      
@@ -166,11 +167,11 @@ void PCD8544::Temperature_tinyfont(float temp_, uint8_t page, uint8_t col) {
 
 
 // display battery voltage to 2dp, using 8x8 font.
-void PCD8544::Battery_smallfont(float battery, uint8_t page, uint8_t col) {
+void PCD8544::Battery_smallfont(float battery, uint8_t page, uint8_t col, bool Redraw) {
   dtostrf(battery,4,2,str_new2);
   str_new2[4] = 'v';
   for (int i=0; i<5; i++) {
-    if (str_new2[i] != str_old2[i]) { 
+    if ((str_new2[i] != str_old2[i]) || Redraw) { 
       write8x8Char(page, col+i*8, str_new2[i], Font8x8_);
       str_old2[i] = str_new2[i]; // after loop finish make str_old2 the current str_new2
     }      
@@ -178,10 +179,10 @@ void PCD8544::Battery_smallfont(float battery, uint8_t page, uint8_t col) {
 }
 
 // display battery*10 voltage to 0dp, using 3x5 font.
-void PCD8544::Battery_tinyfont(float battery, uint8_t page, uint8_t col) {
+void PCD8544::Battery_tinyfont(float battery, uint8_t page, uint8_t col, bool Redraw) {
   dtostrf(battery*10.0,2,0,str_new3);
   for (int i=0; i<2; i++) {
-    if (str_new3[i] != str_old3[i]) {
+    if ((str_new3[i] != str_old3[i]) || Redraw) {
       writeBlock(page, col+4*i, 1, 4,  ASCII2offset(str_new3[i], 0x0004), FontNums3x5);
       str_old3[i] = str_new3[i]; // after loop finish make str_old3 the current str_new3
     }      
@@ -189,18 +190,29 @@ void PCD8544::Battery_tinyfont(float battery, uint8_t page, uint8_t col) {
 }
 
 // display battery*100 voltage to 0dp, using 3x5 font.
-void PCD8544::Battery_tinyfont2(float battery, uint8_t page, uint8_t col) {
+void PCD8544::Battery_tinyfont2(float battery, uint8_t page, uint8_t col, bool Redraw) {
   dtostrf(battery*100.0,3,0,str_new3);
   for (int i=0; i<3; i++) {
-    if (str_new3[i] != str_old3[i]) {
+    if ((str_new3[i] != str_old3[i]) || Redraw) {
       writeBlock(page, col+4*i, 1, 4,  ASCII2offset(str_new3[i], 0x0004), FontNums3x5);
       str_old3[i] = str_new3[i]; // after loop finish make str_old3 the current str_new3
     }      
   }
 }
 
+// display battery raw ADC, using 3x5 font.
+void PCD8544::Battery_RawADC(uint16_t adc, uint8_t page, uint8_t col, bool Redraw) {
+  itoa(adc,str_new4,10);
+  for (int i=0; i<4; i++) {
+    if ((str_new4[i] != str_old4[i]) || Redraw) {
+      writeBlock(page, col+4*i, 1, 4,  ASCII2offset(str_new4[i], 0x0004), FontNums3x5);
+      str_old4[i] = str_new4[i]; // after loop finish make str_old4 the current str_new4
+    }      
+  }
+}
+
 // flash block at battery voltage position if it is too low
-void PCD8544::BatteryFlash_tinyfont(bool flashOn, uint8_t page, uint8_t col) {
+void PCD8544::BatteryFlash_tinyfont(bool flashOn, uint8_t page, uint8_t col, bool Redraw) {
   uint16_t charOfs;
   if (flashOn) {
     charOfs = 0x0038; // block
@@ -214,7 +226,7 @@ void PCD8544::BatteryFlash_tinyfont(bool flashOn, uint8_t page, uint8_t col) {
   }
 
   for (int i=0; i<2; i++) {
-    if (str_new3[i] != str_old3[i]) {
+    if ((str_new3[i] != str_old3[i]) || Redraw) {
       writeBlock(page, col+4*i, 1, 4, charOfs, FontNums3x5);
       str_old3[i] = str_new3[i]; // after loop finish make str_old3 the current str_new3
     }      
@@ -224,10 +236,10 @@ void PCD8544::BatteryFlash_tinyfont(bool flashOn, uint8_t page, uint8_t col) {
 // generate and display formatted string for altitude, using 16x24 font.
 // 3 pages (24 bits) high, In feet, 2 dp, can change position.
 // but for speed only redisplay changed characters.
-void PCD8544::Altitude_smallfont(float altitude, uint8_t page, uint8_t col) {
+void PCD8544::Altitude_smallfont(float altitude, uint8_t page, uint8_t col, bool Redraw) {
   dtostrf(altitude/1000.0,5,2,str_new);
   for (int i=0; i<5; i++) {
-    if (str_new[i] != str_old[i]) {
+    if ((str_new[i] != str_old[i]) || Redraw) {
       writeBlock(page, col+16*i, 3, 16,  ASCII2offset(str_new[i], 0x0030), FontNums16x24_);
       str_old[i] = str_new[i]; // after loop finish make str_old the current str_new
     }
@@ -236,7 +248,7 @@ void PCD8544::Altitude_smallfont(float altitude, uint8_t page, uint8_t col) {
 
 // generate and display formatted string for altitude, mainly using the 24x48 large font.
 // the last two digits for feet and tens of feet use the tiny font
-void PCD8544::Altitude_largefont(float altitude) {
+void PCD8544::Altitude_largefont(float altitude, bool Redraw) {
   Serial.println(altitude);
   uint16_t point = 0x0008;
   uint16_t thickMinus = 0x0010;
@@ -278,7 +290,7 @@ void PCD8544::Altitude_largefont(float altitude) {
     str_new1[1] = '0';    
   }
 
-  if (str_new1[0] != str_old1[0]) {
+  if ((str_new1[0] != str_old1[0]) || Redraw) {
     writeBlock(0, 24*0, 6, 24,  ASCII2offset(str_new1[0], 0x0090), FontNums24x48);
     str_old1[0] = str_new1[0]; // after display make str_old1 the current str_new1
 
@@ -286,17 +298,17 @@ void PCD8544::Altitude_largefont(float altitude) {
     if (isbig) writeBlock(3, 0, 1, 8, thickMinus, Symbols4x8);
   }
 
-  if (str_new1[1] != str_old1[1]) {
+  if ((str_new1[1] != str_old1[1]) || Redraw) {
     writeBlock(0, 24*1, 6, 24,  ASCII2offset(str_new1[1], 0x0090), FontNums24x48);
     str_old1[1] = str_new1[1];
   }
 
-  if (str_new1[6] != str_old1[6]) {
+  if ((str_new1[6] != str_old1[6]) || Redraw) {
     writeBlock(3, 24*2, 1, 4,  point, Symbols4x8);
     str_old1[6] = str_new1[6];
   }
 
-  if (str_new1[2] != str_old1[2]) {
+  if ((str_new1[2] != str_old1[2]) || Redraw) {
     writeBlock(0, 24*2+4, 6, 24,  ASCII2offset(str_new1[2], 0x0090), FontNums24x48);
     str_old1[2] = str_new1[2];
   }
@@ -305,12 +317,12 @@ void PCD8544::Altitude_largefont(float altitude) {
   if (issml) writeBlock(5, 72, 1, 4,  ASCII2offset('-', 0x0004), FontNums3x5);
   else writeBlock(5, 72, 1, 4,  ASCII2offset(' ', 0x0004), FontNums3x5);
   
-  if (str_new1[3] != str_old1[3]) {
+  if ((str_new1[3] != str_old1[3]) || Redraw) {
     writeBlock(5, 76, 1, 4,  ASCII2offset(str_new1[3], 0x0004), FontNums3x5);
     str_old1[3] = str_new1[3];
   }
 
-  if (str_new1[4] != str_old1[4]) {
+  if ((str_new1[4] != str_old1[4]) || Redraw) {
     writeBlock(5, 80, 1, 4,  ASCII2offset(str_new1[4], 0x0004), FontNums3x5);
     str_old1[4] = str_new1[4];
   }

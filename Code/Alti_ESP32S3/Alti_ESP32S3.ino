@@ -47,17 +47,25 @@ PCD8544 lcd{RST, CE, DC, DIN, CLK};
 // 4 VCC - connect to 3V3 pin on micro
 MS5637 BARO;
 
-// global variables
+// *** global variables ***
 bool isGround;
 uint32_t chipId = 0;
 uint16_t adcRaw;
 float temp, pressure, altBase, altRel, batVol;
+// related to safely shutting down the altimeter
+int pressNum = 0;
+bool keyPressed = false;
+bool keyPressedAgain = false;
+bool Redraw = false;
+
 
 void setup() {
   Serial.begin(115200);
 
-  // initialize digital pin LED_BUILTIN as an output.
+  // initialize digital pin LED_BUILTIN as an output
+  // and turn the LED off (ie. HIGH) by default
   pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
 
   // setup deep-sleep on/off pin,
   // actually need an external pull-up (4.7k)
@@ -107,6 +115,10 @@ void setup() {
 }
 
 void loop() {
+
+  // is key pressed ?
+  keyPressed = (digitalRead(ONOFF_PIN)==LOW); 
+
   if (!BARO.isOK()) {
     // Try to reinitialise the sensor if we can and measure temperature and pressure
     BARO.begin();
@@ -118,22 +130,21 @@ void loop() {
 
   // Calculate and display the altitude relative to where the altimeter was turned on
   altRel = BARO.pressure2altitude(pressure) - altBase; 
-  //altRel = 13456.0;
   if (altRel < 0.0) altRel = -1.0*altRel; // take the absolute value 
-  lcd.Altitude_largefont(altRel);
+  lcd.Altitude_largefont(altRel, Redraw);
 
   // display current temperature measured by the MS5637 (and used to
   // improve calculation of air pressure above)
   temp = temp - 0.5; // fudjustment for circuit temp being above ambient
-  lcd.Temperature_tinyfont(temp, 1, 76);
+  lcd.Temperature_tinyfont(temp, 1, 76, Redraw);
 
-  // Read raw ADC value, convert to battery voltage and display 
+  // Read raw ADC value, convert to battery voltage and display both
   adcRaw = analogRead(BATTERY_PIN);
-  batVol = adcRaw*0.000940767+0.31; // 0.287561; // raw adc to battery voltage conversion
+  batVol = adcRaw*0.000903509+0.460132; // 0.287561; // raw adc to battery voltage conversion
   if (batVol>3.19){
     // just display battery voltage
-//    lcd.Battery_tinyfont(batVol, 0, 76);
-    lcd.Battery_tinyfont2(batVol, 0, 72);
+//    lcd.Battery_tinyfont(batVol, 0, 76, Redraw);
+    lcd.Battery_tinyfont2(batVol, 0, 72, Redraw); 
   }
   else { //battery voltage too low so indicate need to charge LiPo
     // flash a block in the battery voltage display position
@@ -142,8 +153,11 @@ void loop() {
     mTime = mTime-floor(mTime/1000.0)*1000.0;
     bool isFlash = false;
     if (mTime<500.0) isFlash = true;
-    lcd.BatteryFlash_tinyfont(isFlash, 0, 76);
+    lcd.BatteryFlash_tinyfont(isFlash, 0, 76, Redraw);
   }
+  lcd.Battery_RawADC(adcRaw, 2, 68, Redraw);
+
+  Redraw = false;
 
   Serial.print("Altitude: ");
   Serial.println(altRel);
@@ -154,40 +168,71 @@ void loop() {
   Serial.print("Battery Voltage: ");
   Serial.println(batVol);
 
-  int pinState = digitalRead(ONOFF_PIN);
-  if (pinState == LOW) {
-    Serial.println("LOW");
 
-    // setup lcd screen and display 'shutdown' screen for 4 seconds
-    // then clear just before 'shutdown'
+// *** START - dealing with trying to shut down altimeter ***
+
+  if ((pressNum==1) && (!keyPressed)) {
     lcd.clear();
-    // lcd.setCursor(0, 1);
     lcd.print("----------");
-    lcd.print("-SHUTTING-");
-    lcd.print("---DOWN---");    
-    lcd.print("---INTO---");
-    lcd.print("DEEP SLEEP");
+    lcd.print("--PRESS---");
+    lcd.print("--AGAIN---");    
+    lcd.print("--NOW!!---");
     lcd.print("----------");
-    Serial.println("SHUTTING DOWN");
-    delay(5000);
+    lcd.print("----------");
+    delay(500);
 
-    // Enable EXT0 wake-up source (wake up when pin goes LOW) 
-    esp_sleep_enable_ext0_wakeup(GPIO_NUM_7, 0);
-
-    // Enter deep sleep mode 
-    esp_deep_sleep_start();
-
-  } 
-  else {
-      Serial.println("HIGH");
+    // is key pressed again?
+    keyPressedAgain = (digitalRead(ONOFF_PIN)==LOW); 
+    delay(500);
+    lcd.clear();
+    delay(500);
+    if (!keyPressedAgain) {
+      pressNum = 0;
+      Redraw = true;
+    }      
+  }
+  else if ((pressNum==1) && (keyPressed)) {
+    // kept button pressed too long so reset attempt to shut down
+    delay(500);
+    pressNum==0;
+    keyPressed = false;
+    Redraw = true;
   }
 
-  
-  digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-  delay(200);                      // wait for a second
-  digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
-  delay(200);                      // wait for a second
+  if (keyPressed || keyPressedAgain ){
+    if (pressNum==0) {
+      // clear and display 'shutdown' screen for 3 seconds then clear again
+      lcd.clear();
+      lcd.print("----------");
+      lcd.print("-SHUTTING-");
+      lcd.print("---DOWN---");    
+      lcd.print("---INTO---");
+      lcd.print("DEEP SLEEP");
+      lcd.print("----------");
+      delay(2000);
+      lcd.clear();
 
+      pressNum = 1;
+      Redraw = true;
+    }
+    else if (pressNum==1) {
+      lcd.print("----------");
+      lcd.print("-SHUTTING-");
+      lcd.print("---DOWN---");    
+      lcd.print("--4-REAL--");
+      lcd.print("----------");
+      lcd.print("----------");
+      delay(2000);
+
+      // Enable EXT0 wake-up source (wake up when pin goes LOW) 
+      esp_sleep_enable_ext0_wakeup(GPIO_NUM_7, 0);
+
+      // Enter deep sleep mode 
+      esp_deep_sleep_start();
+    }
+  } 
+
+// *** END - dealing with trying to shut down altimeter ***
 
   delay(50);
   Serial.println("LOOPING");

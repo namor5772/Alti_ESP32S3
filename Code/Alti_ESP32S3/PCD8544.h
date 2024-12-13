@@ -37,13 +37,14 @@ class PCD8544 : public Print {
     void writeBlock(uint8_t page, uint8_t col, uint8_t pages, uint8_t cols, uint16_t address, const uint8_t Arr[]);
     void write8x8Char(uint8_t page, uint8_t column, uint16_t charCode, const uint8_t Arr[][8]);
     void Temperature(float temp_, uint8_t page, uint8_t col); // not used
-    void Temperature_tinyfont(float temp_, uint8_t page, uint8_t col);
-    void Battery_smallfont(float battery, uint8_t page, uint8_t col); // not used
-    void Battery_tinyfont(float battery, uint8_t page, uint8_t col);
-    void Battery_tinyfont2(float battery, uint8_t page, uint8_t col);
-    void BatteryFlash_tinyfont(bool flashOn, uint8_t page, uint8_t col);
-    void Altitude_smallfont(float altitude, uint8_t page, uint8_t col); // not used
-    void Altitude_largefont(float altitude);
+    void Temperature_tinyfont(float temp_, uint8_t page, uint8_t col, bool Redraw);
+    void Battery_smallfont(float battery, uint8_t page, uint8_t col, bool Redraw); // not used
+    void Battery_tinyfont(float battery, uint8_t page, uint8_t col, bool Redraw);
+    void Battery_tinyfont2(float battery, uint8_t page, uint8_t col, bool Redraw);
+    void Battery_RawADC(uint16_t adc, uint8_t page, uint8_t col, bool Redraw);
+    void BatteryFlash_tinyfont(bool flashOn, uint8_t page, uint8_t col, bool Redraw);
+    void Altitude_smallfont(float altitude, uint8_t page, uint8_t col, bool Redraw); // not used
+    void Altitude_largefont(float altitude, bool Redraw);
     uint16_t ASCII2offset(char char_, uint16_t offsetScale);
 
     virtual size_t write(uint8_t ch); // Overriding Print's write method
@@ -71,6 +72,7 @@ class PCD8544 : public Print {
     char str_old1[11]; char str_new1[11];
     char str_old2[11]; char str_new2[11];
     char str_old3[11]; char str_new3[11];
+    char str_old4[11]; char str_new4[11];
 };
 
 #endif
