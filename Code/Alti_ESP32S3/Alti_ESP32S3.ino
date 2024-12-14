@@ -90,21 +90,11 @@ void setup() {
     altBase = 0.0;
     preferences.putBool("isGround", true);
   }
-  Serial.println(altBase);  
-
-  // just some chip info on startup
-  for (int i = 0; i < 17; i = i + 8) {chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;}
-  Serial.printf("ESP32 Chip model = %s Rev %d\n", ESP.getChipModel(), ESP.getChipRevision());
-  Serial.printf("This chip has %d cores\n", ESP.getChipCores());
-  Serial.print("Chip ID: ");
-  Serial.print(chipId);
-  Serial.println("\n");
-
-  // setup lcd screen and display splash screen for 4 seconds
+ 
+  // setup lcd screen and display splash screen for 3 seconds
   // then clear in readiness for normal data display
   lcd.setDisplayMode(NORMAL);
   lcd.setContrast(60);
-//  lcd.clear();
   lcd.print("Alti ESP32v2.0 Nov24");
   lcd.print("----------");
   lcd.setCursor(0, 3);
@@ -114,10 +104,14 @@ void setup() {
   lcd.clear();
 }
 
+
 void loop() {
 
   // is key pressed ?
   keyPressed = (digitalRead(ONOFF_PIN)==LOW); 
+
+
+// *** START - obtaining, processing and displaying data on screen
 
   if (!BARO.isOK()) {
     // Try to reinitialise the sensor if we can and measure temperature and pressure
@@ -143,8 +137,7 @@ void loop() {
   batVol = adcRaw*0.000903509+0.460132; // 0.287561; // raw adc to battery voltage conversion
   if (batVol>3.19){
     // just display battery voltage
-//    lcd.Battery_tinyfont(batVol, 0, 76, Redraw);
-    lcd.Battery_tinyfont2(batVol, 0, 72, Redraw); 
+    lcd.Battery_tinyfont(batVol, 0, 76, Redraw);
   }
   else { //battery voltage too low so indicate need to charge LiPo
     // flash a block in the battery voltage display position
@@ -155,19 +148,10 @@ void loop() {
     if (mTime<500.0) isFlash = true;
     lcd.BatteryFlash_tinyfont(isFlash, 0, 76, Redraw);
   }
-  lcd.Battery_RawADC(adcRaw, 2, 68, Redraw);
+
+// *** END - obtaining, processing and displaying data on screen
 
   Redraw = false;
-
-  Serial.print("Altitude: ");
-  Serial.println(altRel);
-  Serial.print("Adjusted temp: ");
-  Serial.println(temp);
-  Serial.print("Raw ADC: ");
-  Serial.println(adcRaw);
-  Serial.print("Battery Voltage: ");
-  Serial.println(batVol);
-
 
 // *** START - dealing with trying to shut down altimeter ***
 
@@ -201,7 +185,7 @@ void loop() {
 
   if (keyPressed || keyPressedAgain ){
     if (pressNum==0) {
-      // clear and display 'shutdown' screen for 3 seconds then clear again
+      // clear and display 'shutdown' screen for 2 seconds then clear again
       lcd.clear();
       lcd.print("----------");
       lcd.print("-SHUTTING-");
@@ -235,6 +219,4 @@ void loop() {
 // *** END - dealing with trying to shut down altimeter ***
 
   delay(50);
-  Serial.println("LOOPING");
-  Serial.println(" ");
 }
