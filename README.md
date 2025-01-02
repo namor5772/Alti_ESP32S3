@@ -6,5 +6,7 @@ In addition the voltage x 10 is displayed in a tiny font at the top right of the
 
 The switch for the altimiter is actually a momentary push button and does not physically disconnect/connect the battery from the circuit, it just toggles between the microcontrollers normal and deep sleep states. In the deep sleep state the circuit uses minimal current of around 18µA and should last about a year before recharging. In order that one does not accidentally switch the altimeter off, doing so requires the switch to be pressed twice within a very specific and narrow time gap range. This is indicated by temporary and self explanatory messages displayed on the screen.
 
+It has been successfully tested in freefall!
+
 
 ![ESP32-S3 pinout](Images/ESP32-S3_pinout.png)

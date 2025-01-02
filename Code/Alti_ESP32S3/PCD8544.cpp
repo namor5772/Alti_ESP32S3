@@ -249,7 +249,7 @@ void PCD8544::Altitude_smallfont(float altitude, uint8_t page, uint8_t col, bool
 // generate and display formatted string for altitude, mainly using the 24x48 large font.
 // the last two digits for feet and tens of feet use the tiny font
 void PCD8544::Altitude_largefont(float altitude, bool Redraw) {
-  Serial.println(altitude);
+  //Serial.println(altitude);
   uint16_t point = 0x0008;
   uint16_t thickMinus = 0x0010;
   str_new1[6] = 'p'; // a bit of a fudge to avoid redrawing custom point
@@ -326,7 +326,7 @@ void PCD8544::Altitude_largefont(float altitude, bool Redraw) {
     writeBlock(5, 80, 1, 4,  ASCII2offset(str_new1[4], 0x0004), FontNums3x5);
     str_old1[4] = str_new1[4];
   }
-  Serial.println(str_new1);
+  //Serial.println(str_new1);
 }     
 
 // a private utility function that maps numbers 'only' font chars to memmory offsets

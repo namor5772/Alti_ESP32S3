@@ -7,8 +7,9 @@
 #include <esp32-hal-gpio.h>
 
 // To Do :
-// 1. Make nicer big numbers font for displaying Altitude
-// 2. Test Deep-Sleep functionality
+// done 1. Make nicer big numbers font for displaying Altitude
+// done 2. Test Deep-Sleep functionality
+// 3. implement 3x button press Deep-Sleep functionality, with random delays
 
 // Define the analog pin connected to the voltage divider
 #define BATTERY_PIN 8 // GPIO8 (A9)
@@ -57,9 +58,15 @@ int pressNum = 0;
 bool keyPressed = false;
 bool keyPressedAgain = false;
 bool Redraw = false;
+int tryNum = 0;
+uint32_t startTime, elapsedTime;
+int randomDelay;
+
+
 
 
 void setup() {
+  startTime = millis();
   Serial.begin(115200);
 
   // initialize digital pin LED_BUILTIN as an output
@@ -106,7 +113,6 @@ void setup() {
 
 
 void loop() {
-
   // is key pressed ?
   keyPressed = (digitalRead(ONOFF_PIN)==LOW); 
 
@@ -155,27 +161,55 @@ void loop() {
 
 // *** START - dealing with trying to shut down altimeter ***
 
-  if ((pressNum==1) && (!keyPressed)) {
-    lcd.clear();
+  if ((pressNum > 0) && (!keyPressed)) {
+    lcd.clear(); delay(50);
+    Serial.print(F("PRESS AGAIN "));
+    Serial.println(pressNum);
     lcd.print("----------");
     lcd.print("--PRESS---");
     lcd.print("--AGAIN---");    
     lcd.print("--NOW!!---");
     lcd.print("----------");
     lcd.print("----------");
-    delay(500);
+    delay(100);
 
     // is key pressed again?
-    keyPressedAgain = (digitalRead(ONOFF_PIN)==LOW); 
-    delay(500);
+    tryNum = 0;
+    Serial.println(tryNum);
+    keyPressedAgain = (digitalRead(ONOFF_PIN)==LOW);
+    while ((!keyPressedAgain) && (tryNum<10)) {
+      delay(100);
+      keyPressedAgain = (digitalRead(ONOFF_PIN)==LOW);
+      tryNum++;
+      Serial.println(tryNum);
+    }
     lcd.clear();
-    delay(500);
+    
+    // make this delay slightly random, say between 1 and 4 seconds,
+    // unless it is teh 2nd press in which case can just make it 1second
+
+    if (pressNum==2) {
+      delay(1000);
+    }
+    else {
+      randomDelay = 10*random(100,501);
+      Serial.println(randomDelay);
+      delay(randomDelay);
+    }
+
+    pressNum++;
     if (!keyPressedAgain) {
+      Serial.println(F("MISSED"));
+      lcd.print("          ");
+      lcd.print("          ");
+      lcd.print("  MISSED  ");
+      delay(2000);
+      lcd.clear();
       pressNum = 0;
       Redraw = true;
     }      
   }
-  else if ((pressNum==1) && (keyPressed)) {
+  else if ((pressNum > 0) && (keyPressed)) {
     // kept button pressed too long so reset attempt to shut down
     delay(500);
     pressNum==0;
@@ -186,20 +220,31 @@ void loop() {
   if (keyPressed || keyPressedAgain ){
     if (pressNum==0) {
       // clear and display 'shutdown' screen for 2 seconds then clear again
-      lcd.clear();
+      lcd.clear(); delay(50);
+      Serial.println(F("SHUTTING DOWN INTO DEEP SLEEP"));
       lcd.print("----------");
       lcd.print("-SHUTTING-");
       lcd.print("---DOWN---");    
       lcd.print("---INTO---");
       lcd.print("DEEP SLEEP");
       lcd.print("----------");
-      delay(2000);
+
+      // make this delay slightly random, say between 1 and 4 seconds
+      // we randomly seed the random generator here
+      // for use here and and the next keypress.
+      elapsedTime = millis() - startTime;
+      randomSeed(elapsedTime);
+      randomDelay = 10*random(100,501);
+      Serial.println(randomDelay);
+      delay(randomDelay);
       lcd.clear();
 
       pressNum = 1;
       Redraw = true;
     }
-    else if (pressNum==1) {
+    else if (pressNum==3) {
+      lcd.clear(); delay(50);
+      Serial.println(F("SHUTTING DOWN FOR REAL"));
       lcd.print("----------");
       lcd.print("-SHUTTING-");
       lcd.print("---DOWN---");    
