@@ -6,6 +6,9 @@
 #include <esp_sleep.h>
 #include <esp32-hal-gpio.h>
 
+// Define DEBUG to enable debug mode
+#define DEBUG
+
 // To Do :
 // done 1. Make nicer big numbers font for displaying Altitude
 // done 2. Test Deep-Sleep functionality
@@ -61,8 +64,6 @@ bool Redraw = false;
 int tryNum = 0;
 uint32_t startTime, elapsedTime;
 int randomDelay;
-
-
 
 
 void setup() {
@@ -163,8 +164,12 @@ void loop() {
 
   if ((pressNum > 0) && (!keyPressed)) {
     lcd.clear(); delay(50);
+
+#ifdef DEBUG
     Serial.print(F("PRESS AGAIN "));
     Serial.println(pressNum);
+#endif    
+
     lcd.print("----------");
     lcd.print("--PRESS---");
     lcd.print("--AGAIN---");    
@@ -185,9 +190,8 @@ void loop() {
     }
     lcd.clear();
     
-    // make this delay slightly random, say between 1 and 4 seconds,
-    // unless it is teh 2nd press in which case can just make it 1second
-
+    // make this delay slightly random, say between 1 and 5 seconds,
+    // unless it is the 2nd press in which case can just make it 1second
     if (pressNum==2) {
       delay(1000);
     }
@@ -229,13 +233,15 @@ void loop() {
       lcd.print("DEEP SLEEP");
       lcd.print("----------");
 
-      // make this delay slightly random, say between 1 and 4 seconds
+      // make this delay slightly random, say between 1 and 5 seconds
       // we randomly seed the random generator here
       // for use here and and the next keypress.
       elapsedTime = millis() - startTime;
       randomSeed(elapsedTime);
       randomDelay = 10*random(100,501);
+
       Serial.println(randomDelay);
+      
       delay(randomDelay);
       lcd.clear();
 
